@@ -65,7 +65,7 @@ if __name__ == "__main__":
             while True:
                 hand_marker = input("Specify hand marker: ")
                 if hand_marker not in marker_names:
-                    print("\nInvalid marker name. ")
+                    print("\nInvalid marker name.")
                 else:
                     print()
                     break
@@ -79,17 +79,25 @@ if __name__ == "__main__":
                     if current_node > 2:
                         break
                     else:
-                        print("\nThere must be at least two motion nodes. ")
+                        print("\nThere must be at least two motion nodes.")
                 elif node not in marker_names:
-                    print("\nInvalid marker name. ")
+                    print("\nInvalid marker name.")
+                elif node == hand_marker:
+                    print("\nMotion nodes cannot include the hand marker.")
                 else:
                     print()
                     motion_nodes += [node]
                     current_node += 1
 
+            # Print confirmation to user
+            print("\nParsing", frame_count, "frames for motion [", end = "")
+            for node in motion_nodes[:-1]:
+                print(node, end = " -> ")
+            print(motion_nodes[-1] + "] using hand marker:", hand_marker)
+
             # Iterate through frames
-            for row in reader:
-                print(row[0])
+            #for row in reader:
+                #print(row[0])
 
             print(motion_nodes)
 
