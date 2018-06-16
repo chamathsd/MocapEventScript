@@ -26,6 +26,8 @@ if __name__ == "__main__":
     # Initialize loop variables
     frame_count = 0
     marker_names = {}
+    hand_marker = None
+    motion_nodes = []
 
     # Begin load of TSV document
     try:
@@ -53,10 +55,43 @@ if __name__ == "__main__":
                         marker_names[name] = idx - 1
                     break
 
+            # Display available markers to user
+            print("\nFound the following available markers:")
+            for name in marker_names:
+                print(name, end = "   ")
+            print("\n")
+
+            # Request user input for hand marker
+            while True:
+                hand_marker = input("Specify hand marker: ")
+                if hand_marker not in marker_names:
+                    print("\nInvalid marker name. ")
+                else:
+                    print()
+                    break
+
+            # Request user input for motion nodes
+            current_node = 1
+            while True:
+                node = input("Specify node " + str(current_node) + " (leave "
+                             "blank for last node): ")
+                if node == "":
+                    if current_node > 2:
+                        break
+                    else:
+                        print("\nThere must be at least two motion nodes. ")
+                elif node not in marker_names:
+                    print("\nInvalid marker name. ")
+                else:
+                    print()
+                    motion_nodes += [node]
+                    current_node += 1
+
             # Iterate through frames
             for row in reader:
                 print(row[0])
-                
+
+            print(motion_nodes)
 
     # If the file does not exist
     except FileNotFoundError:
