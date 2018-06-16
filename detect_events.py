@@ -13,14 +13,30 @@ path to the exported TSV file of the mocap data. From there, the user will be
 asked to specify the nodes that define the motion event.
 """
 
-import sys, csv
+import sys, csv, math
+
+"""Convenience class for tracking marker points in 3D space."""
+class Point:
+    
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __repr__(self):
+        return "(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")"
+
+    def distanceTo(self, other):
+        return math.sqrt((self.x - other.x) ** 2 +
+                         (self.y - other.y) ** 2 +
+                         (self.z - other.z) ** 2)
 
 if __name__ == "__main__":
     
     # Check for proper amount of command-line arguments
     if not len(sys.argv) == 2:
-        print("Wrong amount of command line arguments specified. Script takes one"
-              " TSV file as input.")
+        print("Wrong amount of command line arguments specified. Script takes "
+              "one TSV file as input.")
         sys.exit()
 
     # Initialize loop variables
@@ -95,11 +111,18 @@ if __name__ == "__main__":
                 print(node, end = " -> ")
             print(motion_nodes[-1] + "] using hand marker:", hand_marker)
 
+            # Initialize frame iteration variables
+            target_node = motion_nodes[0]
+            last_node = motion_nodes[-1]
+            
             # Iterate through frames
-            #for row in reader:
-                #print(row[0])
+            for row in reader:
+                hand_idx = marker_names[hand_marker] * 3
+                hand_point = Point(float(row[hand_idx]),
+                                   float(row[hand_idx + 1]),
+                                   float(row[hand_idx + 2]))
 
-            print(motion_nodes)
+                print(hand_point)
 
     # If the file does not exist
     except FileNotFoundError:
