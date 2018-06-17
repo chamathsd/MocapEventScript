@@ -15,8 +15,9 @@ asked to specify the nodes that define the motion event.
 
 import os, sys, csv, math
 
-# Should be less than 0.5
-APPROACH_THRESHOLD = 0.35
+""" Global constants """
+APPROACH_THRESHOLD = 0.35   # Ratio to begin tracking; should be less than 0.5
+APPROACH_BUFFER = 5         # Minimum amount of frames to track
 
 """ Convenience class for tracking marker points in 3D space. """
 class Point:
@@ -120,7 +121,7 @@ if __name__ == "__main__":
                     current_node += 1
 
             # Print confirmation to user
-            print("\nParsing", frame_count, "frames for motion [", end = "")
+            print("\n\nParsing", frame_count, "frames for motion [", end = "")
             for node in motion_nodes[:-1]:
                 print(node, end = " -> ")
             print(motion_nodes[-1] + "] using hand marker:", hand_marker)
@@ -133,6 +134,7 @@ if __name__ == "__main__":
             motion_start = -1
             motion_end = -1
             tracking = False
+            buffer = 0
             frame_store = []
             events = []
 
@@ -177,14 +179,17 @@ if __name__ == "__main__":
                 target_distance = hand_point.distanceTo(target_point)
                 previous_distance = hand_point.distanceTo(previous_point)
                 approach_ratio = target_distance / previous_distance
+
+                buffer -= 1
                 
                 if approach_ratio <= APPROACH_THRESHOLD:
                     if not tracking:
                         # We are entering the target node approach area
                         tracking = True
+                        buffer = APPROACH_BUFFER
                     frame_store += [(target_distance, current_frame)]
                 else:
-                    if tracking:
+                    if tracking and buffer <= 0:
                         # We are leaving the target node approach area
                         if target_idx == 0:
                             # If we are at the beginning of the motion
@@ -219,7 +224,9 @@ if __name__ == "__main__":
                 # Bump our frame count
                 current_frame += 1
 
-            print("\nComplete!")
+            # Give completion feedback to user
+            print("\n\nFinished reading frames. Found", event_num - 1,
+                  "events. ", end = '')
 
             # Check if any events were actually recorded
             if len(events) > 0:
@@ -238,9 +245,20 @@ if __name__ == "__main__":
                         for event in events:
                             writer.writerow(event)
 
+                    print("Output written to '" + save_file + "'.")
+
                 # Can't write to file
                 except IOError:
                     print("Unable to write file '" + save_file + "'")
+
+            else:
+                print()
+
+            # Declare if any bad frames were skipped
+            if bad_frames > 0:
+                print("Warning: skipped", bad_frames, "frames (" +
+                      str(round((bad_frames / frame_count) * 100, 2)) +
+                      "%) due to invalid hand or station markers.")
 
     # If the file does not exist
     except FileNotFoundError:
