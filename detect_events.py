@@ -15,6 +15,8 @@ asked to specify the nodes that define the motion event.
 
 import sys, csv, math
 
+APPROACH_THRESHOLD = 0.2
+
 """Convenience class for tracking marker points in 3D space."""
 class Point:
     
@@ -25,6 +27,9 @@ class Point:
 
     def __repr__(self):
         return "(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")"
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y and self.z == other.z
 
     def distanceTo(self, other):
         return math.sqrt((self.x - other.x) ** 2 +
@@ -90,7 +95,7 @@ if __name__ == "__main__":
             current_node = 1
             while True:
                 node = input("Specify node " + str(current_node) + " (leave "
-                             "blank for last node): ")
+                             "blank for previous node): ")
                 if node == "":
                     if current_node > 2:
                         break
@@ -112,17 +117,95 @@ if __name__ == "__main__":
             print(motion_nodes[-1] + "] using hand marker:", hand_marker)
 
             # Initialize frame iteration variables
-            target_node = motion_nodes[0]
-            last_node = motion_nodes[-1]
-            
-            # Iterate through frames
-            for row in reader:
-                hand_idx = marker_names[hand_marker] * 3
-                hand_point = Point(float(row[hand_idx]),
-                                   float(row[hand_idx + 1]),
-                                   float(row[hand_idx + 2]))
+            current_frame = 1
+            bad_frames = 0
 
-                print(hand_point)
+            event_num = 1
+            motion_start = -1
+            motion_end = -1
+            tracking = False
+            frame_store = []
+
+            target_idx = 0
+            target_node = motion_nodes[target_idx]
+            previous_node = motion_nodes[target_idx - 1]
+            zero_point = Point(0, 0, 0)
+
+            # Iterate through mocap data
+            for row in reader:
+                # Create 3D point for hand marker
+                hand_col = marker_names[hand_marker] * 3
+                hand_point = Point(float(row[hand_col]),
+                                   float(row[hand_col + 1]),
+                                   float(row[hand_col + 2]))
+
+                if hand_point == zero_point:
+                    bad_frames += 1
+                    continue
+
+                # Create 3D point for target node
+                target_col = marker_names[target_node] * 3
+                target_point = Point(float(row[target_col]),
+                                     float(row[target_col + 1]),
+                                     float(row[target_col + 2]))
+
+                if target_point == zero_point:
+                    bad_frames += 1
+                    continue
+
+                # Create 3D point for previous node
+                previous_col = marker_names[previous_node] * 3
+                previous_point = Point(float(row[previous_col]),
+                                       float(row[previous_col + 1]),
+                                       float(row[previous_col + 2]))
+
+                if previous_point == zero_point:
+                    bad_frames += 1
+                    continue
+
+                # Determine the ratio between target and previous node distances
+                target_distance = hand_point.distanceTo(target_point)
+                previous_distance = hand_point.distanceTo(previous_point)
+                approach_ratio = target_distance / previous_distance
+                
+                if approach_ratio <= APPROACH_THRESHOLD:
+                    if not tracking:
+                        # We are entering the target node approach area
+                        tracking = True
+                    frame_store += [(target_distance, current_frame)]
+                else:
+                    if tracking:
+                        # We are leaving the target node approach area
+                        if target_idx == 0:
+                            # If we are at the beginning of the motion
+                            motion_start = min(frame_store)[1]
+                            
+                        elif target_idx == (len(motion_nodes) - 1):
+                            # If we are at the end of the motion
+                            motion_end = min(frame_store)[1]
+
+                            print("(" + str(event_num) + ", " +
+                                  str(motion_start) + ", " +
+                                  str(motion_end) + ")")
+                            
+                            # Reset motion variables
+                            event_num += 1
+                            motion_start = -1
+                            motion_end = -1
+
+                        # Reset tracking variables
+                        tracking = False
+                        frame_store = []
+
+                        # Rotate target and previous nodes
+                        target_idx = (target_idx + 1) % len(motion_nodes)
+                        target_node = motion_nodes[target_idx]
+                        previous_node = motion_nodes[target_idx - 1]
+
+                # Bump our frame count
+                current_frame += 1
+
+            print("Complete!")
 
     # If the file does not exist
     except FileNotFoundError:
