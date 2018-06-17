@@ -47,6 +47,7 @@ if __name__ == "__main__":
 
     # Initialize loop variables
     frame_count = 0
+    frequency = 1
     marker_names = {}
     hand_marker = None
     motion_nodes = []
@@ -62,9 +63,13 @@ if __name__ == "__main__":
                 # Get frame count
                 if (row[0] == "NO_OF_FRAMES"):
                     frame_count = int(row[1])
+
+                # Get frequency
+                elif (row[0] == "FREQUENCY"):
+                    frequency = int(row[1])
                     
                 # Populate marker dictionary
-                if (row[0] == "MARKER_NAMES"):
+                elif (row[0] == "MARKER_NAMES"):
                     for idx in range(1, len(row)):
                         
                         suffix = 0
@@ -189,7 +194,9 @@ if __name__ == "__main__":
 
                             print("(" + str(event_num) + ", " +
                                   str(motion_start) + ", " +
-                                  str(motion_end) + ")")
+                                  str(motion_end) + ", " +
+                                  str(round((motion_end - motion_start) / frequency, 2))
+                                  + ")")
                             
                             # Reset motion variables
                             event_num += 1
