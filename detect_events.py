@@ -127,7 +127,7 @@ if __name__ == "__main__":
             print(motion_nodes[-1] + "] using hand marker:", hand_marker)
 
             # Initialize frame iteration variables
-            current_frame = 1
+            current_frame = 0
             bad_frames = 0
 
             event_num = 1
@@ -143,8 +143,20 @@ if __name__ == "__main__":
             previous_node = motion_nodes[target_idx - 1]
             zero_point = Point(0, 0, 0)
 
+            print()
+
             # Iterate through mocap data
             for row in reader:
+
+                #Bump our frame 
+                current_frame += 1
+
+                # Display progress bar
+                print("|" +
+                      ("=" * int((current_frame / frame_count) * 50)).ljust(50)
+                      + "| " + str(current_frame) + "/" + str(frame_count),
+                      end = '\r')
+                
                 # Create 3D point for hand marker
                 hand_col = marker_names[hand_marker] * 3
                 hand_point = Point(float(row[hand_col]),
@@ -221,12 +233,9 @@ if __name__ == "__main__":
                         target_node = motion_nodes[target_idx]
                         previous_node = motion_nodes[target_idx - 1]
 
-                # Bump our frame count
-                current_frame += 1
-
             # Give completion feedback to user
             print("\n\nFinished reading frames. Found", event_num - 1,
-                  "events. ", end = '')
+                  "events.")
 
             # Check if any events were actually recorded
             if len(events) > 0:
