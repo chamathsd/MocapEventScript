@@ -13,10 +13,10 @@ path to the exported TSV file of the mocap data. From there, the user will be
 asked to specify the nodes that define the motion event.
 """
 
-import sys, csv, math
+import os, sys, csv, math
 
 # Should be less than 0.5
-APPROACH_THRESHOLD = 0.25
+APPROACH_THRESHOLD = 0.35
 
 """ Convenience class for tracking marker points in 3D space. """
 class Point:
@@ -54,8 +54,9 @@ if __name__ == "__main__":
 
     # Begin load of TSV document
     try:
-        with open(sys.argv[1]) as tsv:
-            reader = csv.reader(tsv, delimiter='\t')
+        save_file = os.path.splitext(sys.argv[1])[0] + "_events.csv"
+        with open(sys.argv[1], 'r') as load:
+            reader = csv.reader(load, delimiter='\t')
 
             # Parse header tags
             for row in reader:
@@ -133,6 +134,7 @@ if __name__ == "__main__":
             motion_end = -1
             tracking = False
             frame_store = []
+            events = []
 
             target_idx = 0
             target_node = motion_nodes[target_idx]
@@ -192,11 +194,13 @@ if __name__ == "__main__":
                             # If we are at the end of the motion
                             motion_end = min(frame_store)[1]
 
-                            print("(" + str(event_num) + ", " +
-                                  str(motion_start) + ", " +
-                                  str(motion_end) + ", " +
-                                  str(round((motion_end - motion_start) / frequency, 2))
-                                  + ")")
+                            # Register our event with the event list
+                            event = [event_num,
+                                     motion_start,
+                                     motion_end,
+                                     round((motion_end - motion_start) /
+                                           frequency, 2)]
+                            events += [event]
                             
                             # Reset motion variables
                             event_num += 1
@@ -215,8 +219,29 @@ if __name__ == "__main__":
                 # Bump our frame count
                 current_frame += 1
 
-            print("Complete!")
+            print("\nComplete!")
+
+            # Check if any events were actually recorded
+            if len(events) > 0:
+                save_file = os.path.splitext(sys.argv[1])[0] + "_events.csv"
+                try:
+                    with open(save_file, 'w', newline = '') as save:
+                        writer = csv.writer(save, delimiter=',')
+
+                        # Write file header
+                        writer.writerow(["Motion",
+                                         "Start Frame",
+                                         "End Frame",
+                                         "Length (sec)"])
+
+                        # Write each event
+                        for event in events:
+                            writer.writerow(event)
+
+                # Can't write to file
+                except IOError:
+                    print("Unable to write file '" + save_file + "'")
 
     # If the file does not exist
     except FileNotFoundError:
-        print("Couldn't find matching file for '" + str(sys.argv[1]) + "'")
+        print("Couldn't find matching file for '" + sys.argv[1] + "'")

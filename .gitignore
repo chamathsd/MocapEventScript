@@ -1,3 +1,6 @@
 # Ignore auto-generated Mac DS_Store files
 *.DS_Store
 .DS_Store
+
+# Ignore generated CSV files
+*.csv
