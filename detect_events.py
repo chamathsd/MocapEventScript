@@ -15,9 +15,10 @@ asked to specify the nodes that define the motion event.
 
 import sys, csv, math
 
-APPROACH_THRESHOLD = 0.2
+# Should be less than 0.5
+APPROACH_THRESHOLD = 0.25
 
-"""Convenience class for tracking marker points in 3D space."""
+""" Convenience class for tracking marker points in 3D space. """
 class Point:
     
     def __init__(self, x, y, z):
@@ -94,8 +95,8 @@ if __name__ == "__main__":
             # Request user input for motion nodes
             current_node = 1
             while True:
-                node = input("Specify node " + str(current_node) + " (leave "
-                             "blank for previous node): ")
+                node = input("Specify node " + str(current_node) + " of motion"
+                             " (leave blank if complete): ")
                 if node == "":
                     if current_node > 2:
                         break
@@ -105,6 +106,8 @@ if __name__ == "__main__":
                     print("\nInvalid marker name.")
                 elif node == hand_marker:
                     print("\nMotion nodes cannot include the hand marker.")
+                elif len(motion_nodes) > 0 and node == motion_nodes[-1]:
+                    print("\nNode cannot be the same as the previous node.")
                 else:
                     print()
                     motion_nodes += [node]
